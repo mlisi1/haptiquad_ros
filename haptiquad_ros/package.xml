@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package>
+  <name>haptiquad_ros</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="michele.lisi@phd.unipi.it">Michele Lisi</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>message_filters</build_depend>
+  <build_depend>haptiquad</build_depend>
+  <build_depend>haptiquad_msgs</build_depend>
+  <build_depend>pinocchio</build_depend>
+  <build_depend>Eigen3</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>message_filters</run_depend>
+  <run_depend>haptiquad</run_depend>
+  <run_depend>haptiquad_msgs</run_depend>
+  <run_depend>pinocchio</run_depend>
+  <run_depend>Eigen3</run_depend>
+
+</package>
