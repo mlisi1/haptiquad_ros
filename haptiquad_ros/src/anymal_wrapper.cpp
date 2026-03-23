@@ -5,7 +5,7 @@
 ANYmalWrapper::ANYmalWrapper() : HaptiQuadWrapperBase() {
 
     bag_sub = nh.subscribe(
-        "state_estimator/anymal_state",
+        "/state_estimator/anymal_state",
         10,
         &ANYmalWrapper::bagCallback,
         this
@@ -106,6 +106,10 @@ void ANYmalWrapper::bagCallback(const anymal_msgs::AnymalState::ConstPtr& msg) {
 
 
 int main(int argc, char **argv) {
+    if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    {
+        ros::console::notifyLoggerLevelsChanged();
+    }
     ros::init(argc, argv, "haptiquad_anymal");
     ANYmalWrapper wrapper;
     ros::spin();

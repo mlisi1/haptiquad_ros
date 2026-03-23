@@ -2,53 +2,53 @@
 
 HaptiQuadWrapperBase::HaptiQuadWrapperBase() : nh("~") {
 
-    description_sub = nh.subscribe(
-        "/floating_base_description",
-        10,
-        &HaptiQuadWrapperBase::descriptionCallback,
-        this
-    ); 
+    // description_sub = nh.subscribe(
+    //     "/floating_base_description",
+    //     10,
+    //     &HaptiQuadWrapperBase::descriptionCallback,
+    //     this
+    // ); 
 
     gains_sub = nh.subscribe(
-        "gains",
+        "/gains",
         10,
         &HaptiQuadWrapperBase::gainsCallback,
         this
     );
 
     friction_sub = nh.subscribe(
-        "friction",
+        "/friction",
         10,
         &HaptiQuadWrapperBase::frictionCallback,
         this
     );
 
-    residual_publisher = nh.advertise<haptiquad_msgs::ResidualsStamped>("residuals", 10);
-    residual_error_publisher = nh.advertise<haptiquad_msgs::ResidualErrorStamped>("residual_errors", 10);
-    forces_publisher = nh.advertise<haptiquad_msgs::EstimatedForces>("estimated_forces", 10);
+    residual_publisher = nh.advertise<haptiquad_msgs::ResidualsStamped>("/residuals", 10);
+    residual_error_publisher = nh.advertise<haptiquad_msgs::ResidualErrorStamped>("/residual_errors", 10);
+    forces_publisher = nh.advertise<haptiquad_msgs::EstimatedForces>("/estimated_forces", 10);
 
     //PARAMETERS
-    nh.param<int>("estimator/num_contacts", num_contacts, 0);
-    nh.param<float>("observer/k_int", k_int, 1.0);
-    nh.param<float>("observer/k_ext", k_ext, 1.0);
-    nh.param<bool>("observer/rescale", rescale, false);
-    nh.param<double>("observer/expected_dt", expected_dt, 0.0);
-    nh.param<double>("observer/threshold", threshold, 0.0); 
-    nh.param<std::string>("estimator/base_link_name", base_link_name, "base");
-    nh.param<bool>("estimator/calculate_residual_error", calculate_residual_error, false);
-    nh.param<double>("evaluation/mass_scaling", mass_scaling, 1.0);
-    nh.param<double>("evaluation/inertia_scaling", inertia_scaling, 1.0);
-    nh.param<double>("evaluation/drop_prob", drop_prob, 0.0);
+    nh.param<int>("/estimator/num_contacts", num_contacts, 0);
+    nh.param<float>("/observer/k_int", k_int, 1.0);
+    nh.param<float>("/observer/k_ext", k_ext, 1.0);
+    nh.param<bool>("/observer/rescale", rescale, false);
+    nh.param<double>("/observer/expected_dt", expected_dt, 0.0);
+    nh.param<double>("/observer/threshold", threshold, 0.0); 
+    nh.param<std::string>("/estimator/base_link_name", base_link_name, "base");
+    nh.param<bool>("/estimator/calculate_residual_error", calculate_residual_error, false);
+    nh.param<double>("/evaluation/mass_scaling", mass_scaling, 1.0);
+    nh.param<double>("/evaluation/inertia_scaling", inertia_scaling, 1.0);
+    nh.param<double>("/evaluation/drop_prob", drop_prob, 0.0);
 
-    nh.param<double>("evaluation/drop_prob_good", drop_prob_good_, 0.0);
-    nh.param<double>("evaluation/drop_prob_bad", drop_prob_bad_, 0.0);
-    nh.param<double>("evaluation/p_good_to_bad", p_good_to_bad_, 0.0);
-    nh.param<double>("evaluation/p_bad_to_good", p_bad_to_good_, 0.0);
+    nh.param<double>("/evaluation/drop_prob_good", drop_prob_good_, 0.0);
+    nh.param<double>("/evaluation/drop_prob_bad", drop_prob_bad_, 0.0);
+    nh.param<double>("/evaluation/p_good_to_bad", p_good_to_bad_, 0.0);
+    nh.param<double>("/evaluation/p_bad_to_good", p_bad_to_good_, 0.0);
     in_good_state_ = true;
 
-    nh.param<bool>("observer/friction/friction", friction, false);
-    nh.param<double>("observer/friction/F_s", F_s, 0.0);    
-    nh.param<double>("observer/friction/F_c", F_c, 0.0);    
+    nh.param<bool>("/observer/friction/friction", friction, false);
+    nh.param<double>("/observer/friction/F_s", F_s, 0.0);    
+    nh.param<double>("/observer/friction/F_c", F_c, 0.0);    
 
     observer.setFrictionParameters(friction, F_s, F_c); 
     estimator.setBaseFrame(base_link_name);
@@ -56,14 +56,21 @@ HaptiQuadWrapperBase::HaptiQuadWrapperBase() : nh("~") {
     rng_.seed(std::random_device{}());
     uniform_dist_ = std::uniform_real_distribution<double>(0.0, 1.0);
 
-    ROS_DEBUG_STREAM("Initialized base wrapper");
+    if (nh.getParam("/floating_base_description", xml_description)) {
+        descriptionCallback(xml_description);
+    } else {
+        // Fall back to subscribing to topic if parameter not available
+        ROS_WARN("Robot description parameter '/floating_base_description' not found.");
+    }
+
+    ROS_DEBUG_STREAM("Initialized base wrapper");   
 
 }
 
 
 
 
-void HaptiQuadWrapperBase::descriptionCallback(const std_msgs::String::ConstPtr& msg) {
+void HaptiQuadWrapperBase::descriptionCallback(const std::string xml_description) {
 
     if (description_received) {
         ROS_WARN_STREAM("Description already received!");
@@ -71,7 +78,7 @@ void HaptiQuadWrapperBase::descriptionCallback(const std_msgs::String::ConstPtr&
     }
 
     pinocchio::Model model;
-    pinocchio::urdf::buildModelFromXML(msg->data, model);
+    pinocchio::urdf::buildModelFromXML(xml_description, model);
 
 
     for (auto & inertia : model.inertias)

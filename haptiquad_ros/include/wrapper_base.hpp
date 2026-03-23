@@ -34,7 +34,7 @@ class HaptiQuadWrapperBase {
 
     private:
 
-        void descriptionCallback(const std_msgs::String::ConstPtr& msg);
+        void descriptionCallback(const std::string xml_description);
         void gainsCallback(const haptiquad_msgs::ObserverGains::ConstPtr& msg);
         void frictionCallback(const haptiquad_msgs::FrictionParameters::ConstPtr& msg);   
 
@@ -51,6 +51,7 @@ class HaptiQuadWrapperBase {
 
         bool description_received = false;
         bool first_message, gt_first_message = true;
+        std::string xml_description;
 
         ros::Subscriber description_sub;
         ros::Subscriber gains_sub;

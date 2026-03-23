@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Get package path and config file location -->
+  <arg name="config_file" default="$(find haptiquad_ros)/config/anymal_config.yaml" 
+       doc="Observer config file" />
+  
+  <!-- Load config file to parameter server -->
+  <rosparam command="load" file="$(arg config_file)" ns="" />
+  
+  <!-- Launch the haptiquad wrapper node -->
+  <node pkg="haptiquad_ros" type="haptiquad_anymal" name="haptiquad_anymal" 
+        output="screen" respawn="false">
+
+  </node>
+
+</launch>
