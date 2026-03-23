@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <node name="force_plotter" pkg="haptiquad_plot" type="force_plotter.py" output="screen">
+    <param name="autoscale"         value="true"/>
+    <param name="listening"         value="true"/>
+    <param name="x_lim"             value="5.0"/>
+    <param name="memory_limit"      value="1000"/>
+    <rosparam param="legs_prefix">
+        - LF
+        - LH
+        - RF
+        - RH
+        </rosparam>
+    <param name="foot_suffix"       value="FOOT"/>
+  </node>
+
+</launch>
+

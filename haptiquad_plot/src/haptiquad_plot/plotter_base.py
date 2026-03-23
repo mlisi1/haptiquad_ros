@@ -1,0 +1,222 @@
+import rospy
+import tkinter as tk
+from tkinter import ttk
+from threading import Thread
+import os
+from rospkg import RosPack
+
+from PIL import Image, ImageTk
+
+
+class PlotterBase(tk.Tk):
+
+    def __init__(self, node_name):
+
+        self.listening = False    
+        self.autoscale = False
+        self.autoscroll = True
+
+        self.start_time = None
+        self.frozen_data = None
+
+        tk.Tk.__init__(self)
+
+        # Initialize ROS node
+        rospy.init_node(node_name, anonymous=False)
+
+        self.protocol('WM_DELETE_WINDOW', self.on_destroy)
+        self.geometry("1920x1080")
+        tk.Tk.wm_title(self, node_name)
+
+        # Get leg prefixes from parameter server
+        self.legs_prefix = rospy.get_param('~legs_prefix', [""])
+
+        if (len(self.legs_prefix) > 4):
+            raise RuntimeError("Legs prefix are more than 4 - not supported")
+        if self.legs_prefix == [""]:
+            raise RuntimeError("Leg prefix not specified")
+
+        # Get package paths
+        rospack = RosPack()
+        pkg_path = rospack.get_path('haptiquad_plot')
+        
+        theme_path = os.path.join(pkg_path, 'theme', 'azure.tcl')
+        save_icon_path = os.path.join(pkg_path, 'res', 'save_icon.png')
+        pause_icon_path = os.path.join(pkg_path, 'res', 'pause_icon.png')
+
+        self.save_icon = ImageTk.PhotoImage(Image.open(save_icon_path).resize((24, 24)))
+        self.pause_icon = ImageTk.PhotoImage(Image.open(pause_icon_path))
+
+        self.tk.call("source", theme_path)
+        self.tk.call("set_theme", "light")
+        self.previous_size = (0, 0)
+
+        menu_bar = tk.Menu(self)
+        # File Menu
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Save figures", command=self.save_plots, image=self.save_icon, compound='left', accelerator="Ctrl+S")
+        self.bind("<Control-s>", lambda event: self.save_plots()) 
+
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        self.config(menu=menu_bar)
+
+        self.scroll_range = tk.StringVar()
+
+        # Get x_lim parameter from parameter server
+        x_lim = rospy.get_param('~x_lim', 10.0)
+        self.scroll_range.set(str(x_lim))
+
+        # Get memory limit parameter
+        self.limit = rospy.get_param('~memory_limit', 1000)
+
+        self.listen = ttk.Checkbutton(self, style='Toggle.TButton', text="Listen Topic", command=self.start_listening)
+        self.listen.grid(row=0, column=1, padx=(50, 5), pady=10, sticky="w")
+
+        ttk.Separator(self, orient=tk.VERTICAL).grid(row=0, column=2, sticky="ns", pady=5, padx=5)
+
+        self.autoscale_butt = ttk.Checkbutton(self, style='Toggle.TButton', text="Autoscale", command=self.set_autoscale)
+        self.autoscale_butt.grid(row=0, column=3, padx=5, pady=10, sticky="w")
+
+        self.scale_range = tk.StringVar()
+        self.scale_range.set("5")
+
+        self.scale_range_spin = ttk.Spinbox(self, from_=0.01, to=100.0, increment=0.01, textvariable=self.scale_range, width=5)
+        self.scale_range_spin.grid(row=0, column=4, padx=(20, 5), pady=10, sticky="we")
+
+        self.set_range_butt = ttk.Button(self, text="Set", command=self.set_range, width=2)
+        self.set_range_butt.grid(row=0, column=5, padx=(5, 10), sticky="we", pady=10)
+
+        ttk.Separator(self, orient=tk.VERTICAL).grid(row=0, column=6, sticky="ns", pady=5, padx=5)
+
+        self.pause = tk.BooleanVar()
+        self.pause.set(False)
+        self.pause_button = ttk.Checkbutton(self, style='Toggle.TButton', image=self.pause_icon, variable=self.pause)
+        self.pause_button.grid(column=0, row=0, pady=10)
+
+        self.plots = []
+
+        # Start ROS spinner thread
+        self.spin_thread = Thread(target=self._ros_spin, daemon=True)
+        self.spin_thread.start()
+
+        self.add_GUI()
+
+        self.set_scroll_range()
+
+        self.bind("<Configure>", self.on_resize) 
+        self.on_resize(None)
+
+        # Create a rate object for timing (10 Hz)
+        self.rate = rospy.Rate(60)
+
+
+    def _ros_spin(self):
+        """Spin ROS in a separate thread"""
+        while not rospy.is_shutdown():
+            rospy.sleep(0.001)
+
+    
+    def init_from_params(self):
+
+        self.autoscale_from_start = rospy.get_param('~autoscale', True)
+        self.listening_from_start = rospy.get_param('~listening', False)
+
+        if self.autoscale_from_start:
+            self.autoscale_butt.invoke()
+
+        if self.listening_from_start:
+            self.listen.invoke()
+
+
+    def set_scroll_range(self):
+
+        value = float(self.scroll_range.get())
+        for plot in self.plots.values():
+            plot.x_range = value
+
+    def set_autoscroll(self):
+
+        self.autoscroll = not self.autoscroll
+        for plot in self.plots.values():
+            plot.autoscroll_x = self.autoscroll
+            plot.redraw_limits = True
+
+        if self.autoscroll:
+            self.set_scroll_range_butt.config(state=tk.DISABLED)
+        else:
+            self.set_scroll_range_butt.config(state=tk.NORMAL)
+
+
+    def set_range(self):
+
+        value = float(self.scale_range.get())
+        for plot in self.plots.values():
+            plot.range = (-value, value)
+
+    def set_autoscale(self):
+
+        self.autoscale = not self.autoscale
+
+        for plot in self.plots.values():
+            plot.autoscale = self.autoscale
+            plot.redraw_limits = True
+
+        if self.autoscale:
+            self.set_range_butt.config(state=tk.DISABLED)
+        else:
+            self.set_range_butt.config(state=tk.NORMAL)
+
+
+    def on_resize(self, event):
+
+        # Update to get the current values
+        self.update()
+        curr_size = (self.winfo_width(), self.winfo_height())
+
+        if self.previous_size != curr_size:
+
+            height = self.winfo_height() / 3
+            width = self.winfo_width() / 2 
+
+            for plot in self.plots.values():
+                plot.canvas.get_tk_widget().config(width=width, height=height)
+                plot.fast_update()
+
+        self.previous_size = curr_size
+
+
+    def start_listening(self):
+        pass
+
+    def update_plots(self):
+        pass
+
+    def add_GUI(self):
+        pass
+
+    def run(self):
+        """Main event loop"""
+        while not rospy.is_shutdown():
+            try:
+                self.update_plots()
+                self.update()
+                self.update_idletasks()
+                self.rate.sleep()
+            except rospy.ROSInterruptException:
+                break
+            except tk.TclError:
+                # Window was closed
+                break
+
+
+    def on_destroy(self):
+        """Called when window is closed"""
+        try:
+            self.destroy()
+        except:
+            pass
+        rospy.signal_shutdown("Window closed")
+
+
+    def save_plots(self):
+        pass

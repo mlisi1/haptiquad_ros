@@ -1,0 +1,3 @@
+[submodule "haptiquad_plot/theme"]
+	path = haptiquad_plot/theme
+	url = git@github.com:rdbende/Azure-ttk-theme.git
