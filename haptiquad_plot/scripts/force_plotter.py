@@ -76,7 +76,7 @@ class ForcePlotter(PlotterBase):
         self.est_sub = Subscriber('/estimated_forces', EstimatedForces)
         self.bag_sub = Subscriber('/state_estimator/anymal_state', AnymalState)
         
-        self.bag_sync = TimeSynchronizer([self.bag_sub, self.est_sub], queue_size=10)
+        self.bag_sync = TimeSynchronizer([self.bag_sub, self.est_sub], queue_size=100)
         self.bag_sync.registerCallback(self.bag_callback)
     
         self.init_from_params()

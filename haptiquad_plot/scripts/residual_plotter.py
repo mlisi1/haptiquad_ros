@@ -54,8 +54,8 @@ class ResidualPlotter(PlotterBase):
 
 
     def set_gains(self):
-        self.gains_msg.k_int.data = float(self.k_int.get())
-        self.gains_msg.k_ext.data = float(self.k_ext.get())
+        self.gains_msg.k_int = float(self.k_int.get())
+        self.gains_msg.k_ext = float(self.k_ext.get())
         self.gains_pub.publish(self.gains_msg)
 
 
@@ -245,7 +245,6 @@ class ResidualPlotter(PlotterBase):
         for i in range(4):
 
             to_plot, time, labels, title = self.proces_mode_int(i, err)
-            print(labels)
             if not to_plot.shape[1] == time.shape[0]:
                 continue
 
@@ -270,7 +269,7 @@ class ResidualPlotter(PlotterBase):
         
         self.joint_names = msg.names		
 
-        t = msg.stamp.sec + 1e-9 * msg.stamp.nanosec
+        t = msg.header.stamp.to_sec()
         if self.start_time == None:
             self.start_time = t			
         
@@ -325,7 +324,7 @@ class ResidualPlotter(PlotterBase):
         new_values = np.array([value for value in msg.err_ext]).reshape((6,1))
         self.err_ext = np.hstack((self.err_ext, new_values))
 
-        t = msg.stamp.sec + 1e-9 * msg.stamp.nanosec
+        t = msg.header.stamp.to_sec()
         if self.err_start_time == None:
             self.err_start_time = t			
         

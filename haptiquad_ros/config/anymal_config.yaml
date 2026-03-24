@@ -1,7 +1,7 @@
 # Haptiquad ROS1 Configuration
 observer:
-  k_int: 50.0
-  k_ext: 50.0
+  k_int: 100.0
+  k_ext: 90.0
   rescale: true
   expected_dt: 0.024
   threshold: 0.03
