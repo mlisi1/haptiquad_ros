@@ -16,8 +16,6 @@ estimator:
   calculate_residual_error: false
 
 evaluation:
-  mass_scaling: 1.0
-  inertia_scaling: 1.0
   drop_prob: 0.0
   drop_prob_good: 0.0
   drop_prob_bad: 0.0

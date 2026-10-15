@@ -114,9 +114,6 @@ class HaptiQuadWrapperBase {
         double alpha  = 0.0;    // Transition parameter [s/rad]
 
 
-        //Mass/Inertia scaling (for evaluation purposes)
-        double mass_scaling = 1.0;
-        double inertia_scaling = 1.0;
 
 
 

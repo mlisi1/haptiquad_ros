@@ -36,8 +36,6 @@ HaptiQuadWrapperBase::HaptiQuadWrapperBase() : nh("~") {
     nh.param<double>("/observer/threshold", threshold, 0.0); 
     nh.param<std::string>("/estimator/base_link_name", base_link_name, "base");
     nh.param<bool>("/estimator/calculate_residual_error", calculate_residual_error, false);
-    nh.param<double>("/evaluation/mass_scaling", mass_scaling, 1.0);
-    nh.param<double>("/evaluation/inertia_scaling", inertia_scaling, 1.0);
     nh.param<double>("/evaluation/drop_prob", drop_prob, 0.0);
 
     nh.param<double>("/evaluation/drop_prob_good", drop_prob_good_, 0.0);
@@ -80,12 +78,6 @@ void HaptiQuadWrapperBase::descriptionCallback(const std::string xml_description
     pinocchio::Model model;
     pinocchio::urdf::buildModelFromXML(xml_description, model);
 
-
-    for (auto & inertia : model.inertias)
-    {
-        inertia.mass() *= mass_scaling;
-        inertia.inertia() *= inertia_scaling;  
-    }
 
     ROS_DEBUG_STREAM("Received pinocchio model with " << model.nv << " DOFs");
     ROS_DEBUG_STREAM("======================================================");
